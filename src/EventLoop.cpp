@@ -27,12 +27,10 @@ EventLoop::EventLoop()
     ,callingPendingFunctors_(false)
     ,threadId_(CurrentThread::tid())
     ,poller_(Poller::newDefaultPoller(this))
-    ,timerQueue_(new TimerQueue(this))
     ,wakeupFd_(createEventfd())
     ,wakeupChannel_(new Channel(this, wakeupFd_)){
     LOG_DEBUG << "EventLoop created " << this << " in thread " << threadId_;
-    if (t_loopInThisThread)
-    {
+    if (t_loopInThisThread){
         LOG_FATAL << "Another EventLoop " << t_loopInThisThread
             << " exists in this thread " << threadId_;
     }
@@ -197,7 +195,7 @@ void EventLoop::wakeup()
 void EventLoop::handleRead()
 {
     uint64_t one = 1;
-    ssize_t n = sockets::read(wakeupFd_, &one, sizeof one);
+    size_t n = sockets::read(wakeupFd_, &one, sizeof one);
     if (n != sizeof one)
     {
         LOG_ERROR << "EventLoop::handleRead() reads " << n << " bytes instead of 8";

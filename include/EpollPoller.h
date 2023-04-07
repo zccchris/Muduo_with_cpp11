@@ -4,6 +4,7 @@
 */
 #include <vector>
 #include "Poller.h"
+#include "TimeStamp.h"
 
 
 class EpollPoller : public Poller {
@@ -13,7 +14,7 @@ class EpollPoller : public Poller {
 
 	//重写基类方法
 	//运行poll，在epoll中即进行epoll_wait
-	Timestamp poll(int timeoutMs, ChannelList* activeChannels) override;
+	TimeStamp poll(int timeoutMs, ChannelList* activeChannels) override;
 	//更新poller中的感兴趣事件
 	void updateChannel(Channel* channel) override;
 	//移除channel
