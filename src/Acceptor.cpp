@@ -6,66 +6,60 @@
 #include "InetAddress.h"
 #include <cassert>
 
+
+//创建一个socket，使用AF_INET协议族
+static int createNonblockingSocket(){
+    int sockfd = ::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP)
+    if(sockfd < 0){
+        LOG_FATAL << "sockets::createNonblockingOrDie";
+    }
+    return sockfd;
+}
+
+//创建一个acceptor，acceptor会创建一个监听socket
+//将该socket与输入的listenAddr绑定, 封装成channel并将其绑定到一个EventLoop中
 Acceptor::Acceptor(EventLoop* loop, const InetAddress& listenAddr, bool reuseport)
     : loop_(loop)
-    , acceptSocket_(sockets::createNonblockingOrDie(listenAddr.family()))
-    , acceptChannel_(loop, acceptSocket_.fd())
-    , listening_(false)
-    , idleFd_(::open("/dev/null", O_RDONLY | O_CLOEXEC)){
-    assert(idleFd_ >= 0);
-    acceptSocket_.setReuseAddr(true);
-    acceptSocket_.setReusePort(reuseport);
-    acceptSocket_.bindAddress(listenAddr);
-    acceptChannel_.setReadCallback(
-        std::bind(&Acceptor::handleRead, this));
+    , acceptSocket_(createNonblockingSocket())
+    , acceptChannel_(loop, acceptSocket_)
+    , listening_(false){
+    acceptSocket_.setReuseAddr(true); //设置socket选项  
+    acceptSocket_.setReusePort(true); //设置socket选项
+    acceptSocket_.bindAddress(listenAddr); //bind
+    // TcpServer::start()Acceptor.listen 有新用户连接 执行一个回调 connfd => channel => subloop
+    // baseLoop_ 监听到Accpetor有监听事件，baseLoop_就会帮我们新客户连接的回调函数
+    acceptChannel_.setReadCallback(std::bind(&Acceptor::handleRead, this));
 }
 
-Acceptor::~Acceptor()
-{
+Acceptor::~Acceptor(){
     acceptChannel_.disableAll();
     acceptChannel_.remove();
-    ::close(idleFd_);
 }
 
-void Acceptor::listen()
-{
+void Acceptor::listen(){
     loop_->assertInLoopThread();
     listening_ = true;
     acceptSocket_.listen();
     acceptChannel_.enableReading();
 }
 
-void Acceptor::handleRead()
-{
-    loop_->assertInLoopThread();
+//有可读事件发生，即有新用户连接了，此时调用该函数
+void Acceptor::handleRead(){
     InetAddress peerAddr;
-    //FIXME loop until no more
     int connfd = acceptSocket_.accept(&peerAddr);
-    if (connfd >= 0)
-    {
-        // string hostport = peerAddr.toIpPort();
-        // LOG_TRACE << "Accepts of " << hostport;
-        if (newConnectionCallback_)
-        {
+    if (connfd >= 0){
+        if (newConnectionCallback_){
             newConnectionCallback_(connfd, peerAddr);
         }
-        else
-        {
+        else{
             sockets::close(connfd);
         }
     }
-    else
-    {
+    else{
         LOG_SYSERR << "in Acceptor::handleRead";
-        // Read the section named "The special problem of
-        // accept()ing when you can't" in libev's doc.
-        // By Marc Lehmann, author of libev.
-        if (errno == EMFILE)
-        {
-            ::close(idleFd_);
-            idleFd_ = ::accept(acceptSocket_.fd(), NULL, NULL);
-            ::close(idleFd_);
-            idleFd_ = ::open("/dev/null", O_RDONLY | O_CLOEXEC);
+        //fd耗尽了
+        if (errno == EMFILE){
+            LOG_ERROR("sockfd reached limit\n");
         }
     }
 }

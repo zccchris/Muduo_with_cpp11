@@ -8,19 +8,22 @@
 class EventLoop;
 class InetAddress;
 
-///
-/// Acceptor of incoming TCP connections.
-///
-class Acceptor : noncopyable
-{
+/***
+*	
+***/
+
+class Acceptor : noncopyable{
 public:
 	typedef std::function<void(int sockfd, const InetAddress&)> NewConnectionCallback;
-
+/***
+*	接收一个EventLoop
+*	接收一个listenAddr
+***/
 	Acceptor(EventLoop* loop, const InetAddress& listenAddr, bool reuseport);
 	~Acceptor();
 
-	void setNewConnectionCallback(const NewConnectionCallback& cb)
-	{
+	//设置连接事件发生的回调函数，即发生了新的连接，应该做什么
+	void setNewConnectionCallback(const NewConnectionCallback& cb){
 		newConnectionCallback_ = cb;
 	}
 
@@ -28,17 +31,12 @@ public:
 
 	bool listening() const { return listening_; }
 
-	// Deprecated, use the correct spelling one above.
-	// Leave the wrong spelling here in case one needs to grep it for error messages.
-	// bool listenning() const { return listening(); }
-
 private:
 	void handleRead();
 
 	EventLoop* loop_;
-	Socket acceptSocket_;
+	int acceptSocket_;
 	Channel acceptChannel_;
 	NewConnectionCallback newConnectionCallback_;
 	bool listening_;
-	int idleFd_;
 };
