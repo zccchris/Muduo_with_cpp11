@@ -1,4 +1,5 @@
 #include "Channel.h"
+#include "Logger.h"
 #include <sys/epoll.h>
 
 
@@ -8,12 +9,12 @@ const int Channel::kReadEvent = EPOLLIN | EPOLLPRI;
 const int Channel::kWriteEvent = EPOLLOUT;
 
 Channel::Channel(EventLoop* loop, int fd)
-	:loop_(loop)
-	,fd_(fd)
-	,events_(0)
-	,revents_(0)
-	,index_(-1)
-	,tied_(false){
+	: loop_(loop)
+	, fd_(fd)
+	, events_(0)
+	, revents_(0)
+	, index_(-1)
+	, tied_(false){
 }
 
 
@@ -77,8 +78,7 @@ void Channel::HandleEventWithGuard(TimeStamp receiveTime){
         if (closeCallback_)
             closeCallback_();
     }
-    if (revents_ & EPOLLERR)
-    {
+    if (revents_ & EPOLLERR){
         if (errorCallback_)
             errorCallback_();
     }

@@ -9,9 +9,9 @@
 
 //创建一个socket，使用AF_INET协议族
 static int createNonblockingSocket(){
-    int sockfd = ::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP)
+    int sockfd = ::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP);
     if(sockfd < 0){
-        LOG_FATAL << "sockets::createNonblockingOrDie";
+        LOG_FATAL("sockets::createNonblockingOrDie");
     }
     return sockfd;
 }

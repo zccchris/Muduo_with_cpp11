@@ -14,8 +14,7 @@
 #include <memory>
 #include <unordered_map>
 
-class TcpServer : noncopyable
-{
+class TcpServer : noncopyable{
 public:
     typedef std::function<void(EventLoop*)> ThreadInitCallback;
 

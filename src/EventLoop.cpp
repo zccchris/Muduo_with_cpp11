@@ -1,11 +1,13 @@
 #include "EventLoop.h"
-#include "Logging.h"
+#include "Logger.h"
 #include "Channel.h"
 #include "Poller.h"
 #include <algorithm>
 #include <signal.h>
 #include <sys/eventfd.h>
 #include <memory>
+#include <thread>
+#include <cassert>
 
 
 const int kPollTimeMs = 10000;
@@ -25,7 +27,7 @@ EventLoop::EventLoop()
     ,quit_(false)
     ,eventHandling_(false)
     ,callingPendingFunctors_(false)
-    ,threadId_(CurrentThread::tid())
+    ,threadId_(std::this_thread::get_id())
     ,poller_(Poller::newDefaultPoller(this))
     ,wakeupFd_(createEventfd())
     ,wakeupChannel_(new Channel(this, wakeupFd_)){
@@ -47,7 +49,7 @@ EventLoop::EventLoop()
 EventLoop::~EventLoop()
 {
     LOG_DEBUG << "EventLoop " << this << " of thread " << threadId_
-        << " destructs in thread " << CurrentThread::tid();
+        << " destructs in thread " << threadId_;
     wakeupChannel_->disableAll();
     wakeupChannel_->remove();
     ::close(wakeupFd_);
@@ -182,10 +184,9 @@ bool EventLoop::hasChannel(Channel* channel)
 *   所以必须要唤醒 EventLoop ，从而让pendingFunctors_中的任务尽快被执行。
 ***/
 
-void EventLoop::wakeup()
-{
+void EventLoop::wakeup(){
     uint64_t one = 1;
-    ssize_t n = sockets::write(wakeupFd_, &one, sizeof one);
+    ssize_t n = socket::write(wakeupFd_, &one, sizeof one);
     if (n != sizeof one)
     {
         LOG_ERROR << "EventLoop::wakeup() writes " << n << " bytes instead of 8";

@@ -35,7 +35,7 @@ private:
 	void handleRead();
 
 	EventLoop* loop_;
-	int acceptSocket_;
+	Socket acceptSocket_;
 	Channel acceptChannel_;
 	NewConnectionCallback newConnectionCallback_;
 	bool listening_;

@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <mutex>
+#include <thread>
 
 #include "Channel.h"
 #include "noncopyable.h"
@@ -53,7 +54,7 @@ public:
     bool hasChannel(Channel* channel);
 
 
-    bool isInLoopThread() const { return threadId_ == CurrentThread::tid(); }
+    bool isInLoopThread() const { return threadId_ == std::this_thread::get_id();}
     // bool callingPendingFunctors() const { return callingPendingFunctors_; }
     bool eventHandling() const { return eventHandling_; }
 
@@ -75,7 +76,7 @@ private:
     bool eventHandling_; /* atomic */
     bool callingPendingFunctors_; /* atomic */
     int64_t iteration_;
-    const pid_t threadId_;
+    std::thread::id threadId_;
     TimeStamp pollReturnTime_;
     std::unique_ptr<Poller> poller_;
 

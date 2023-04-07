@@ -8,7 +8,7 @@
 #include <vector>
 
 
-class Poller : public muduo::noncopyable {
+class Poller : public noncopyable {
 public:
 	typedef std::vector<Channel*> ChannelList;
 
@@ -17,7 +17,7 @@ public:
 
 	//统一接口，需要在循环中调用
 	//启动poll，poller去查询需要处理的事件，存放到activeChannels中
-	virtual Timestamp poll(int timeoutMs, ChannelList* activeChannels) = 0;
+	virtual TimeStamp poll(int timeoutMs, ChannelList* activeChannels) = 0;
 
 	//更新poller中的感兴趣事件
 	virtual void updateChannel(Channel* channel) = 0;

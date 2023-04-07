@@ -3,20 +3,22 @@
 #include<functional>
 #include<string>
 #include<memory>
+#include "TimeStamp.h"
+#include "EventLoop.h"
 
 class EventLoop;
 
-class Channel :public muduo::noncopyable {
+class Channel :public noncopyable {
 
 public:
 	typedef std::function<void()> EventCallback;
-	typedef std::function<void(Timestamp)> ReadEventCallback;
+	typedef std::function<void(TimeStamp)> ReadEventCallback;
 
 
 	Channel(EventLoop* loop, int fd);
 	~Channel();
 
-	void handleEvent(Timestamp receiveTime);
+	void handleEvent(TimeStamp receiveTime);
 
 	//设置处理事件用的回调函数
 	//使用std::move，将cb这个函数变为右值后再绑定给相应对象，不需要再经历一次复制，移动语义
@@ -62,10 +64,10 @@ private:
 	void update();
 	void HandleEventWithGuard(TimeStamp receiveTime);//和上面的handleEvent差不多，处理受保护的事件
 
-	static string eventsToString(int fd, int ev);
+	static std::string eventsToString(int fd, int ev);
 
 	void update();
-	void handleEventWithGuard(Timestamp receiveTime); //处理受保护的事件
+	void handleEventWithGuard(TimeStamp receiveTime); //处理受保护的事件
 
 	static const int kNoneEvent;
 	static const int kReadEvent;
