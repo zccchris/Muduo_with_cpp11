@@ -36,7 +36,8 @@ int Socket::accept(InetAddress *peeraddr){
     socklen_t len = sizeof(addr);
     bzero(&addr, sizeof(addr));
     //connfd没有设置非阻塞
-    int connfd = ::accept(sockfd_, (sockaddr*)&addr, &len, SOCK_NONBLOCK | SOCK_CLOEXEC);
+    // int connfd = ::accept(sockfd_, (sockaddr*)&addr, &len, SOCK_NONBLOCK | SOCK_CLOEXEC);
+    int connfd = ::accept(sockfd_, (sockaddr*)&addr, &len);
     if (connfd >= 0){
         peeraddr->setSockAddr(addr); //给InetAddress对象设置sockaddr_in
     }

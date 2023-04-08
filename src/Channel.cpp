@@ -60,21 +60,20 @@ void Channel::handleEvent(TimeStamp receiveTime){
     if (tied_) {
         std::shared_ptr<void> guard = tie_.lock();
         if (guard)
-            HandleEventWithGuard(receiveTime);
+            handleEventWithGuard(receiveTime);
     }
     else
-        HandleEventWithGuard(receiveTime);
+        handleEventWithGuard(receiveTime);
 }
 
 
 /**
  * @brief 根据poller通知的channel发生的具体事件类型，由channel负责调用具体的回调操作。
  */
-void Channel::HandleEventWithGuard(TimeStamp receiveTime){
+void Channel::handleEventWithGuard(TimeStamp receiveTime){
    
     LOG_INFO("channel HandleEvent revents:%d", revents_);
-    if ((revents_ & EPOLLHUP) && !(revents_ & EPOLLIN))//EPOLLHUP表示这个设备已经断开连接
-    {
+    if ((revents_ & EPOLLHUP) && !(revents_ & EPOLLIN)){//EPOLLHUP表示这个设备已经断开连接
         if (closeCallback_)
             closeCallback_();
     }

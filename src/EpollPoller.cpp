@@ -7,6 +7,8 @@
 #include <poll.h>
 #include <sys/epoll.h>
 #include <unistd.h>
+#include <cassert>
+#include <cstring>
 
 
 
@@ -25,7 +27,7 @@ EpollPoller::EpollPoller(EventLoop* loop)
     //此时抛出异常
     if (epollfd_ < 0)
     {
-        LOG_SYSFATAL << "EPollPoller::EPollPoller";
+        // LOG_SYSFATAL << "EPollPoller::EPollPoller";
     }
     std::move(kNew);
 }
@@ -41,7 +43,7 @@ void EpollPoller::updateChannel(Channel* channel){
 
     //获取channel状态，判断其是否在poller中
     const int index = channel->index();
-    LOG_TRACE << "fd = " << channel->fd() << " events = " << channel->events() << " index = " << index;
+    // LOG_TRACE << "fd = " << channel->fd() << " events = " << channel->events() << " index = " << index;
     if (index == kNew || index == kDeleted){
         //如果这个channel还没有注册到poller上，需要将其注册到poller上
         int fd = channel->fd();
@@ -83,7 +85,7 @@ void EpollPoller::removeChannel(Channel* channel){
     int fd = channel->fd();
     channels_.erase(fd);
 
-    LOG_TRACE << "fd = " << fd;
+    // LOG_TRACE << "fd = " << fd;
     assert(channels_.find(fd) != channels_.end());
     assert(channels_[fd] == channel);
     assert(channel->isNoneEvent());
@@ -110,45 +112,41 @@ void EpollPoller::update(int operation, Channel* channel){
 
     event.data.ptr = channel;
 
-    LOG_TRACE << "epoll_ctl op = " << operationToString(operation) << " fd = " << fd << " event = { " << channel->eventsToString() << " }";
+    // LOG_TRACE << "epoll_ctl op = " << operationToString(operation) << " fd = " << fd << " event = { " << channel->eventsToString() << " }";
     
     //调用epoll_ctl进行更新，如果更新失败，抛出异常
     if (::epoll_ctl(epollfd_, operation, fd, &event) < 0){
         if (operation == EPOLL_CTL_DEL){
-            LOG_SYSERR << "epoll_ctl op =" << operationToString(operation) << " fd =" << fd;
+            // LOG_SYSERR << "epoll_ctl op =" << operationToString(operation) << " fd =" << fd;
         }
         else{
-            LOG_SYSFATAL << "epoll_ctl op =" << operationToString(operation) << " fd =" << fd;
+            // LOG_SYSFATAL << "epoll_ctl op =" << operationToString(operation) << " fd =" << fd;
         }
     }
 }
 
 
-//调用一次epoll_wait，在得到返回结果后再调用activeChannels，将发生的事件写入channel中的revent
-//同时将有事发生的channel统一记录再activechannels中，方便遍历，统一处理。
-//这个activeChannels是属于EventLoop对象的，EventLoop对象负责反复调用poll，进行循环
-Timestamp EpollPoller::poll(int timeoutMs, ChannelList* activeChannels){
-    LOG_TRACE << "fd total count " << channels_.size();
+
+TimeStamp EpollPoller::poll(int timeoutMs, ChannelList* activeChannels){
+    // LOG_TRACE << "fd total count " << channels_.size();
 
     //events_是一个vector，而这里最终目的是要传入数组首地址
     //events_.begin()是迭代器，*events_.begin()代表第一个元素（对象）&*events.begin()就代表第一个元素的地址。
-
     int numEvents = ::epoll_wait(epollfd_, &*events_.begin(), static_cast<int>(events_.size()), timeoutMs);
     int savedErrno = errno;
-    Timestamp now(Timestamp::now());
+    TimeStamp now(TimeStamp::now());
 
     //有事发生
     if (numEvents > 0){
-        LOG_TRACE << numEvents << " events happened";
+        // LOG_TRACE << numEvents << " events happened";
         fillActiveChannels(numEvents, activeChannels);
-        if (implicit_cast<size_t>(numEvents) == events_.size())
-        {
+        if (static_cast<size_t>(numEvents) == events_.size()){
             events_.resize(events_.size() * 2);
         }
     }
     //无事发生
     else if (numEvents == 0){
-        LOG_TRACE << "nothing happened";
+        // LOG_TRACE << "nothing happened";
     }
 
     //坏了
@@ -156,7 +154,7 @@ Timestamp EpollPoller::poll(int timeoutMs, ChannelList* activeChannels){
         if (savedErrno != EINTR)
         {
             errno = savedErrno;
-            LOG_SYSERR << "EPollPoller::poll()";
+            // LOG_SYSERR << "EPollPoller::poll()";
         }
     }
     return now;

@@ -8,18 +8,27 @@
 #include <memory>
 #include <thread>
 #include <cassert>
+#include <unistd.h>
 
 
 const int kPollTimeMs = 10000;
 
-int createEventfd()
-{
+//__thread是一个thread_local的机制，代表这个变量是这个线程独有的全局变量
+//将其指向一个EventLoop，表示这个线程所拥有的EventLoop
+//当一个EventLoop被创建的时候，该EventLoop所属线程会将t_loopInThisThread指向该EventLoop对象
+//这样即可以防止一个线程创建多个EventLoop
+//实现one thread one loop思想
+__thread EventLoop* t_loopInThisThread = nullptr; 
+int createEventfd(){
     int evtfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
     if (evtfd < 0){
-        LOG_SYSERR << "Failed in eventfd";
+        // LOG_SYSERR << "Failed in eventfd";
         abort();
     }
     return evtfd;
+}
+EventLoop* getEventLoopOfCurrentThread(){
+    return t_loopInThisThread;
 }
 
 EventLoop::EventLoop()
@@ -31,13 +40,11 @@ EventLoop::EventLoop()
     ,poller_(Poller::newDefaultPoller(this))
     ,wakeupFd_(createEventfd())
     ,wakeupChannel_(new Channel(this, wakeupFd_)){
-    LOG_DEBUG << "EventLoop created " << this << " in thread " << threadId_;
+    // LOG_DEBUG << "EventLoop created " << this << " in thread " << threadId_;
     if (t_loopInThisThread){
-        LOG_FATAL << "Another EventLoop " << t_loopInThisThread
-            << " exists in this thread " << threadId_;
+        // LOG_FATAL << "Another EventLoop " << t_loopInThisThread << " exists in this thread " << threadId_;
     }
-    else
-    {
+    else{
         t_loopInThisThread = this;
     }
     wakeupChannel_->setReadCallback(
@@ -46,10 +53,8 @@ EventLoop::EventLoop()
     wakeupChannel_->enableReading();
 }
 
-EventLoop::~EventLoop()
-{
-    LOG_DEBUG << "EventLoop " << this << " of thread " << threadId_
-        << " destructs in thread " << threadId_;
+EventLoop::~EventLoop(){
+    // LOG_DEBUG << "EventLoop " << this << " of thread " << threadId_ << " destructs in thread " << threadId_;
     wakeupChannel_->disableAll();
     wakeupChannel_->remove();
     ::close(wakeupFd_);
@@ -63,7 +68,7 @@ void EventLoop::loop(){
     looping_ = true;
     quit_ = false;
 
-    LOG_TRACE << "EventLoop " << this << " start looping";
+    // LOG_TRACE << "EventLoop " << this << " start looping";
 
     //整体的逻辑为，将一个Channels列表activeChannels清空后传给其管理的poller
     //在poller的poll函数中进行wait，当有事件发生时，将事件写入activeChannels
@@ -85,7 +90,7 @@ void EventLoop::loop(){
          */
         doPendingFunctors(); //执行当前EventLoop事件循环需要处理的回调操作。
     }
-    LOG_TRACE << "EventLoop " << this << " stop looping";
+    // LOG_TRACE << "EventLoop " << this << " stop looping";
     looping_ = false;
 }
 
@@ -155,17 +160,10 @@ void EventLoop::updateChannel(Channel* channel){
 }
 
 void EventLoop::removeChannel(Channel* channel){
-    if (eventHandling_){
-        assert(currentActiveChannel_ == channel ||
-            std::find(activeChannels_.begin(), activeChannels_.end(), channel) == activeChannels_.end());
-    }
     poller_->removeChannel(channel);
 }
 
-bool EventLoop::hasChannel(Channel* channel)
-{
-    assert(channel->ownerLoop() == this);
-    assertInLoopThread();
+bool EventLoop::hasChannel(Channel* channel){
     return poller_->hasChannel(channel);
 }
 
@@ -186,20 +184,20 @@ bool EventLoop::hasChannel(Channel* channel)
 
 void EventLoop::wakeup(){
     uint64_t one = 1;
-    ssize_t n = socket::write(wakeupFd_, &one, sizeof one);
+    ssize_t n = ::write(wakeupFd_, &one, sizeof one);
     if (n != sizeof one)
     {
-        LOG_ERROR << "EventLoop::wakeup() writes " << n << " bytes instead of 8";
+        // LOG_ERROR << "EventLoop::wakeup() writes " << n << " bytes instead of 8";
     }
 }
 
 void EventLoop::handleRead()
 {
     uint64_t one = 1;
-    size_t n = sockets::read(wakeupFd_, &one, sizeof one);
+    size_t n = ::read(wakeupFd_, &one, sizeof one);
     if (n != sizeof one)
     {
-        LOG_ERROR << "EventLoop::handleRead() reads " << n << " bytes instead of 8";
+        // LOG_ERROR << "EventLoop::handleRead() reads " << n << " bytes instead of 8";
     }
 }
 

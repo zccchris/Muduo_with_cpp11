@@ -21,7 +21,7 @@ static int createNonblockingSocket(){
 Acceptor::Acceptor(EventLoop* loop, const InetAddress& listenAddr, bool reuseport)
     : loop_(loop)
     , acceptSocket_(createNonblockingSocket())
-    , acceptChannel_(loop, acceptSocket_)
+    , acceptChannel_(loop, acceptSocket_.fd())
     , listening_(false){
     acceptSocket_.setReuseAddr(true); //设置socket选项  
     acceptSocket_.setReusePort(true); //设置socket选项
@@ -37,7 +37,6 @@ Acceptor::~Acceptor(){
 }
 
 void Acceptor::listen(){
-    loop_->assertInLoopThread();
     listening_ = true;
     acceptSocket_.listen();
     acceptChannel_.enableReading();
@@ -52,11 +51,11 @@ void Acceptor::handleRead(){
             newConnectionCallback_(connfd, peerAddr);
         }
         else{
-            sockets::close(connfd);
+            ::close(connfd);
         }
     }
     else{
-        LOG_SYSERR << "in Acceptor::handleRead";
+        //LOG_SYSERR << "in Acceptor::handleRead";
         //fd耗尽了
         if (errno == EMFILE){
             LOG_ERROR("sockfd reached limit\n");

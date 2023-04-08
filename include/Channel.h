@@ -5,19 +5,28 @@
 #include<memory>
 #include "TimeStamp.h"
 #include "EventLoop.h"
+#include "Socket.h"
 
-class EventLoop;
-
+/***
+*	Channel类负则封装一个socketfd以及对其感兴趣的事件，并存储真正监听到的事件
+*	实例Channel对象时传入EventLoop和socketfd进行绑定
+*	初始化后，调用setReadCallback，setWriteCallback，setCloseCallback，setErrorCallback四个函数设置其发生相应事件时的回调函数
+*	接下来，通过一些列函数设置该fd相应的事件状态，比如需要监听这个fd的可读事件/可写事件，或者取消监听，感兴趣事件列表存在revent中
+*	对于上面的设置，因为真正管理poller的是EventLoop，所以会调用update()函数将上述状态更新至EventLoop中的poller中
+*	在监听到事件发生后，会将发生的事件存入revents_中
+*	handleEvent函数会去查询revents_，并根据具体发生的事件调用已设置好的相应的回调函数
+***/
 class Channel :public noncopyable {
 
 public:
 	typedef std::function<void()> EventCallback;
 	typedef std::function<void(TimeStamp)> ReadEventCallback;
 
-
+	//封装一个连接socket与对其感兴趣的事件，并将其挂载到传入的EvenLoop中
 	Channel(EventLoop* loop, int fd);
 	~Channel();
 
+	//
 	void handleEvent(TimeStamp receiveTime);
 
 	//设置处理事件用的回调函数
@@ -28,8 +37,7 @@ public:
 	void setErrorCallback(EventCallback cb) { errorCallback_ = std::move(cb); }
 
 
-	/// Tie this channel to the owner object managed by shared_ptr,
-/// prevent the owner object being destroyed in handleEvent.
+
 	void tie(const std::shared_ptr<void>&);//防止当channel被手动remove掉，channel还正在执行回调操作
 	int fd() const { return fd_; }
 	int events() const { return events_; }
@@ -44,6 +52,7 @@ public:
 	void enableWriting() { events_ |= kWriteEvent; update(); }
 	void disableWriting() { events_ &= ~kWriteEvent; update(); }
 	void disableAll() { events_ = kNoneEvent; update(); }
+
 	bool isWriting() const { return events_ & kWriteEvent; } //当前感兴趣的事件是否包含可写事件
 	bool isReading() const { return events_ & kReadEvent; } //当前感兴趣的事件是否包含可读事件
 	bool isNoneEvent() const { return events_ == kNoneEvent; }
@@ -62,7 +71,7 @@ public:
 private:
 
 	void update();
-	void HandleEventWithGuard(TimeStamp receiveTime);//和上面的handleEvent差不多，处理受保护的事件
+
 
 	static std::string eventsToString(int fd, int ev);
 

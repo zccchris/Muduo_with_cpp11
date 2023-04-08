@@ -14,7 +14,7 @@
 
 
 
-//该类负责循环工作，管理一个poller，负责不断循环查询poller，并处理获得的事件
+//该类负责循环工作，管理一个poller(该demo里为EpollPoller)，负责不断循环查询poller，并处理获得的事件
 class EventLoop : noncopyable
 {
 public:
@@ -71,10 +71,10 @@ private:
 
     typedef std::vector<Channel*> ChannelList;
 
-    bool looping_; /* atomic */
+    std::atomic<bool> looping_; /* atomic */
     std::atomic<bool> quit_;
-    bool eventHandling_; /* atomic */
-    bool callingPendingFunctors_; /* atomic */
+    std::atomic<bool> eventHandling_; /* atomic */
+    std::atomic<bool> callingPendingFunctors_; /* atomic */
     int64_t iteration_;
     std::thread::id threadId_;
     TimeStamp pollReturnTime_;
