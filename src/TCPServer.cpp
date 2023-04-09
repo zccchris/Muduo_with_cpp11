@@ -1,6 +1,7 @@
-#include "TcpServer.h"
+#include "TCPServer.h"
 #include "Logger.h"
 #include<cassert>
+#include<string>
 
 
 static EventLoop* CheckLoopNotNull(EventLoop* loop) //这里定义为static怕TcpConnection和TcpServer的这个函数产生冲突
@@ -24,13 +25,11 @@ TcpServer::TcpServer(EventLoop* loop, const InetAddress& listenAddr, const std::
         std::bind(&TcpServer::newConnection, this, _1, _2));
 }
 
-TcpServer::~TcpServer()
-{
-    loop_->assertInLoopThread();
-    LOG_TRACE << "TcpServer::~TcpServer [" << name_ << "] destructing";
+TcpServer::~TcpServer(){
 
-    for (auto& item : connections_)
-    {
+    // LOG_TRACE << "TcpServer::~TcpServer [" << name_ << "] destructing";
+
+    for (auto& item : connections_){
         TcpConnectionPtr conn(item.second);
         item.second.reset();
         conn->getLoop()->runInLoop(
@@ -54,19 +53,17 @@ void TcpServer::start(){
     }
 }
 
-void TcpServer::newConnection(int sockfd, const InetAddress& peerAddr)
-{
-    loop_->assertInLoopThread();
+void TcpServer::newConnection(int sockfd, const InetAddress& peerAddr){
     EventLoop* ioLoop = threadPool_->getNextLoop();
     char buf[64];
     snprintf(buf, sizeof buf, "-%s#%d", ipPort_.c_str(), nextConnId_);
     ++nextConnId_;
-    string connName = name_ + buf;
+    std::string connName = name_ + buf;
 
-    LOG_INFO << "TcpServer::newConnection [" << name_
-        << "] - new connection [" << connName
-        << "] from " << peerAddr.toIpPort();
-    InetAddress localAddr(sockets::getLocalAddr(sockfd));
+    // LOG_INFO << "TcpServer::newConnection [" << name_
+    //     << "] - new connection [" << connName
+    //     << "] from " << peerAddr.toIpPort();
+    InetAddress localAddr(::getLocalAddr(sockfd));
     // FIXME poll with zero timeout to double confirm the new connection
     // FIXME use make_shared if necessary
     TcpConnectionPtr conn(new TcpConnection(ioLoop,

@@ -1,18 +1,15 @@
-
-
-#include "Timestamp.h"
+#include "TimeStamp.h"
 #include <time.h>
 using namespace std;
 
 TimeStamp::TimeStamp(int64_t microSecondSinceEpoch) : microSecondSinceEpoch_(microSecondSinceEpoch) {}
 
-TimeStamp TimeStamp::now() //返回当前时间 这是一个static函数
-{
+TimeStamp TimeStamp::now(){ //返回当前时间 这是一个static函数
     return TimeStamp(time(NULL));
 }
 
-string TimeStamp::toString() const //把int64_t的时间转换为字符串
-{
+string TimeStamp::toString() const{ //把int64_t的时间转换为字符串
+
     char buf[128] = { 0 };
     tm* tm_time = localtime(&microSecondSinceEpoch_);  //localtime函数返回的结构体类型tm如下所示。
     snprintf(buf, 128, "%4d/%02d/%02d %02d:%02d:%02d",

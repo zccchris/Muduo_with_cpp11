@@ -8,9 +8,14 @@
 #include <functional>
 #include <string>
 
+#include"EventLoop.h"
 
-class EventLoop;
-
+/***
+ *  EventLoopThread封装一个线程创建的过程
+ *  当调用startLoop函数时，会创建一个线程，在线程函数中，创建一个EventLoop，并执行该EventLoop的loop
+ * 
+ * 
+***/
 class EventLoopThread : public noncopyable{
 public:
     typedef std::function<void(EventLoop*)> ThreadInitCallback;

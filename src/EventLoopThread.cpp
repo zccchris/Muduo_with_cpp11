@@ -14,8 +14,7 @@ EventLoopThread::EventLoopThread(const ThreadInitCallback& cb, const std::string
     , tid(){
 }
 
-EventLoopThread::~EventLoopThread()
-{
+EventLoopThread::~EventLoopThread(){
     exiting_ = true;
     if (loop_ != NULL){
         loop_->quit();

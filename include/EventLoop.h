@@ -12,11 +12,8 @@
 #include "TimeStamp.h"
 #include "Poller.h"
 
-
-
 //该类负责循环工作，管理一个poller(该demo里为EpollPoller)，负责不断循环查询poller，并处理获得的事件
-class EventLoop : noncopyable
-{
+class EventLoop : noncopyable{
 public:
     typedef std::function<void()> Functor;
 
@@ -35,19 +32,19 @@ public:
     TimeStamp pollReturnTime() const { return pollReturnTime_; } //poller返回时的时间，一般指事件到达时的时间
     int64_t iteration() const { return iteration_; }
 
-    /// Runs callback immediately in the loop thread.
-    /// It wakes up the loop, and run the cb.
-    /// If in the same loop thread, cb is run within the function.
-    /// Safe to call from other threads.
+
+    // 在当前线程中直接执行回调函数
+    // 其步骤为1.唤醒当前线程 2.执行回调函数cb
+    // 因为其为public函数，其他线程也能调用，因此需要判断调用者是不是与其所属同一个线程
+    // 如果为同一个线程直接执行，否则入队
     void runInLoop(Functor cb);
-    /// Queues callback in the loop thread.
-    /// Runs after finish pooling.
-    /// Safe to call from other threads.
+
+    // 当前线程的回调函数队列，将cb入队，在pooling返回后执行的回调函数
     void queueInLoop(Functor cb);
 
     size_t queueSize() const;
 
-    // internal usage
+
     void wakeup();
     void updateChannel(Channel* channel);
     void removeChannel(Channel* channel);
@@ -86,7 +83,7 @@ private:
     std::unique_ptr<Channel> wakeupChannel_;
 
 
-    // scratch variables
+    // 活跃Channel:即有事件发生的channel，将这些channels用一个vector进行存储
     ChannelList activeChannels_;
 
 

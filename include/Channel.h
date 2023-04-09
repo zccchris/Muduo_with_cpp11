@@ -15,6 +15,7 @@
 *	对于上面的设置，因为真正管理poller的是EventLoop，所以会调用update()函数将上述状态更新至EventLoop中的poller中
 *	在监听到事件发生后，会将发生的事件存入revents_中
 *	handleEvent函数会去查询revents_，并根据具体发生的事件调用已设置好的相应的回调函数
+*	创建Channel时就将Channel注册到一个EventLoop上，之后调用enable系列函数即刻将事件注册至EventLoop管理的epoll_fd中
 ***/
 class Channel :public noncopyable {
 

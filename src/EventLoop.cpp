@@ -19,6 +19,8 @@ const int kPollTimeMs = 10000;
 //这样即可以防止一个线程创建多个EventLoop
 //实现one thread one loop思想
 __thread EventLoop* t_loopInThisThread = nullptr; 
+
+
 int createEventfd(){
     int evtfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
     if (evtfd < 0){
@@ -49,7 +51,8 @@ EventLoop::EventLoop()
     }
     wakeupChannel_->setReadCallback(
         std::bind(&EventLoop::handleRead, this));
-    // we are always reading the wakeupfd
+    
+    //这一步即将可读事件注册到当前EventLoop中了，这样loop会因为wakeupChannel_发生可读事件而返回
     wakeupChannel_->enableReading();
 }
 
@@ -71,13 +74,13 @@ void EventLoop::loop(){
     // LOG_TRACE << "EventLoop " << this << " start looping";
 
     //整体的逻辑为，将一个Channels列表activeChannels清空后传给其管理的poller
-    //在poller的poll函数中进行wait，当有事件发生时，将事件写入activeChannels
+    //调用其管理的poller中的poll函数中进行wait，当有事件发生时，将事件写入activeChannels
     //然后遍历activeChannels中的每个Channel，对他们所发生的事件进行处理
+    //poll的过程是会阻塞的
     while (!quit_){
         activeChannels_.clear();
         pollReturnTime_ = poller_->poll(kPollTimeMs, &activeChannels_);
 
-        // TODO sort channel by priority
         eventHandling_ = true;
         for (auto channel : activeChannels_){
              channel->handleEvent(pollReturnTime_);
@@ -171,10 +174,10 @@ bool EventLoop::hasChannel(Channel* channel){
 *   在一次loop中，因为调用了poll函数，该EventLoop的管理线程将会被一直阻塞，没有事件发生便不会返回
 *   wakeupFd_则是一个可以我们手动触发的事件，通过wakeup函数向wakeupFd_写入8字节使得写入事件发生
 *   从而强行唤醒阻塞中的EventLoop
-*   问题在于，wakeupchannel什么时候注册到Poller上呢？
+* 
 *   
 *   为什么要唤醒 EventLoop？
-*   首先，如果来不及执行回调函数，会通过pendingFunctors_.push_back(cb)
+*   首先，如果有别的线程向该eventloop插入了新的回调函数或者有来不及执行的回调函数，会通过pendingFunctors_.push_back(cb)
 *   将该函数放在 pendingFunctors_中。EventLoop 的每一轮循环在最后会调用
 *   doPendingFunctors 依次执行这些函数。而 EventLoop 的唤醒是通过 epoll_wait 实现的，
 *   如果此时该 EventLoop 中迟迟没有事件触发，那么 epoll_wait 一直就会阻塞。
@@ -185,14 +188,12 @@ bool EventLoop::hasChannel(Channel* channel){
 void EventLoop::wakeup(){
     uint64_t one = 1;
     ssize_t n = ::write(wakeupFd_, &one, sizeof one);
-    if (n != sizeof one)
-    {
+    if (n != sizeof one){
         // LOG_ERROR << "EventLoop::wakeup() writes " << n << " bytes instead of 8";
     }
 }
 
-void EventLoop::handleRead()
-{
+void EventLoop::handleRead(){
     uint64_t one = 1;
     size_t n = ::read(wakeupFd_, &one, sizeof one);
     if (n != sizeof one)
