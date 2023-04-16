@@ -16,8 +16,7 @@ static int createNonblockingSocket(){
     return sockfd;
 }
 
-//创建一个acceptor，acceptor会创建一个监听socket
-//将该socket与输入的listenAddr绑定, 封装成channel并将其绑定到一个EventLoop中
+
 Acceptor::Acceptor(EventLoop* loop, const InetAddress& listenAddr, bool reuseport)
     : loop_(loop)
     , acceptSocket_(createNonblockingSocket())
@@ -42,7 +41,6 @@ void Acceptor::listen(){
     acceptChannel_.enableReading();
 }
 
-//有可读事件发生，即有新用户连接了，此时调用该函数
 void Acceptor::handleRead(){
     InetAddress peerAddr;
     int connfd = acceptSocket_.accept(&peerAddr);

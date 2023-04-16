@@ -15,8 +15,8 @@ Socket::~Socket()
     close(sockfd_);
 }
 
-void Socket::bindAddress(const InetAddress &localaddr)
-{
+
+void Socket::bindAddress(const InetAddress &localaddr){
     if (0 != bind(sockfd_, (sockaddr*)localaddr.getSockAddr(), sizeof(sockaddr_in))){
         LOG_FATAL("bind sockfd:%d fail \n", sockfd_);
     }
@@ -29,9 +29,8 @@ void Socket::listen(){
     }
 }
 
-//封装accept函数，将客户端的地址存入peeraddr，并返回绑定好后的文件描述符，该文件描述符表示一个连接。
-int Socket::accept(InetAddress *peeraddr){ 
 
+int Socket::accept(InetAddress *peeraddr){ 
     sockaddr_in addr;
     socklen_t len = sizeof(addr);
     bzero(&addr, sizeof(addr));

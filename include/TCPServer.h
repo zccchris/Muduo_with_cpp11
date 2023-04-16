@@ -14,6 +14,11 @@
 #include <memory>
 #include <unordered_map>
 
+
+
+/***
+ *  @brief 一个TCP服务器类，可创建一个TCP服务器对象
+ ***/
 class TcpServer : noncopyable{
 public:
     typedef std::function<void(EventLoop*)> ThreadInitCallback;
@@ -24,29 +29,66 @@ public:
         kReusePort,
     };
 
-
+    /***
+     *  @brief 一个TCP服务器类，可创建一个TCP服务器对象
+     *  @param loop 绑定的的EventLoop，该EventLoop作为主reactor，负责监听连接
+     *  @param listenAddr 该服务器被监听的socket地址
+     *  @param nameArg 给服务器取个好听的名字吧！
+     *  @param option  选项，默认为kNoReusePort，即监听端口不可复用
+     ***/
     TcpServer(EventLoop* loop, const InetAddress& listenAddr, const std::string& nameArg, Option option = kNoReusePort);
+
+
+    /***
+     *  @brief 析构函数
+     ***/
     ~TcpServer();
 
+    /***
+     *  @brief 
+     *  @param 
+     ***/
     const std::string& ipPort() const { return ipPort_; }
+
+    /***
+     *  @brief 
+     *  @param 
+     ***/
     const std::string& name() const { return name_; }
+
+    /***
+     *  @brief 
+     *  @return 
+     ***/
     EventLoop* getLoop() const { return loop_; }
 
-
+    /***
+     *  @brief 
+     *  @param 
+     ***/
     void setThreadNum(int numThreads);
 
+
+    /***
+     *  @brief 
+     *  @param 
+     ***/
     void setThreadInitCallback(const ThreadInitCallback& cb){
         threadInitCallback_ = cb;
     }
 
-
+    /***
+     *  @brief 
+     *  @return 
+     ***/
     std::shared_ptr<EventLoopThreadPool> threadPool(){
         return threadPool_;
     }
 
-    
-    // 线程安全
-    // 开启监听，开启多次产生未定义行为
+
+    /***
+     *  @brief 开启监听，开启多次产生未定义行为，线程安全
+     ***/
     void start();
 
     // 设置连接后的回调函数
@@ -68,8 +110,15 @@ public:
     }
 
 private:
-    /// Not thread safe, but in loop
+
+    /***
+     *  @brief 新连接到来时的处理函数
+     *  @param sockfd 与新连接绑定的文件描述符
+     *  @param peerAddr 用于新连接中客户端的地址存放
+     ***/
     void newConnection(int sockfd, const InetAddress& peerAddr);
+
+
     /// Thread safe.
     void removeConnection(const TcpConnectionPtr& conn);
     /// Not thread safe, but in loop

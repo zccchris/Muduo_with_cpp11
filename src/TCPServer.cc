@@ -3,7 +3,10 @@
 #include<cassert>
 #include<string>
 
-
+/***
+ *  @brief 判断loop是否为空
+ *  @return 如果不空的话返回原loop
+ ***/
 static EventLoop* CheckLoopNotNull(EventLoop* loop) //这里定义为static怕TcpConnection和TcpServer的这个函数产生冲突
 {
     if (loop == nullptr){
@@ -17,18 +20,17 @@ TcpServer::TcpServer(EventLoop* loop, const InetAddress& listenAddr, const std::
     , ipPort_(listenAddr.toIpPort())
     , name_(nameArg)
     , acceptor_(new Acceptor(loop, listenAddr, option == kReusePort))
-    , threadPool_(new EventLoopThreadPool(loop, name_))
-    , connectionCallback_(defaultConnectionCallback)
-    , messageCallback_(defaultMessageCallback)
+    , threadPool_(new EventLoopThreadPool(loop, name_))              //创建新的线程池
+    , connectionCallback_(defaultConnectionCallback)                 //发生连接可读事件的回调函数
+    , messageCallback_(defaultMessageCallback)                       //有消息事件发生时的回调函数
     , nextConnId_(1){
-    acceptor_->setNewConnectionCallback(
+        
+        acceptor_->setNewConnectionCallback(
         std::bind(&TcpServer::newConnection, this, _1, _2));
 }
 
 TcpServer::~TcpServer(){
-
     // LOG_TRACE << "TcpServer::~TcpServer [" << name_ << "] destructing";
-
     for (auto& item : connections_){
         TcpConnectionPtr conn(item.second);
         item.second.reset();
@@ -52,7 +54,10 @@ void TcpServer::start(){
             std::bind(&Acceptor::listen, get_pointer(acceptor_)));
     }
 }
-
+/*
+   一个新连接到来时应该如何处理？
+   根据传入的sockfd(绑定新连接)与peerAddr(客户端地址)，创建一个TcpConnection对象
+ */
 void TcpServer::newConnection(int sockfd, const InetAddress& peerAddr){
     EventLoop* ioLoop = threadPool_->getNextLoop();
     char buf[64];
