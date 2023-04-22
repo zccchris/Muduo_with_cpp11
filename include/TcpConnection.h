@@ -17,18 +17,32 @@ class Channel;
 class EventLoop;
 class Socket;
 
-
 //什么是enable_shared_from_this?
 //即继承自enable_shared_from_this的类，类内部的成员函数可以通过调用shared_from_this获得一个管理this指针的shared_ptr
 //这样是安全的，因为如果直接返回this，外界是不知道this何时失效的
 
+/***
+ *  @brief 该类封装了一个连接成功的完整的TCP连接
+***/
 class TcpConnection: public noncopyable, public std::enable_shared_from_this<TcpConnection>{
 public:
+
+    /***
+     *  @brief 构造函数，构造函数中会给其绑定的channel注册相应的回调函数
+     *  @param loop 该TcpConnection所属的EventLoop
+     *  @param name 取个名字吧
+     *  @param sockfd 该连接的sockfd
+     *  @param locakAddr 服务器地址
+     *  @param peerAddr 客户端地址
+    ***/
     TcpConnection(EventLoop* loop,
                 const std::string& name,
                 int sockfd,
                 const InetAddress& localAddr,
                 const InetAddress& peerAddr);
+    /***
+     * @brief 析构函数
+    ***/  
     ~TcpConnection();
 
   EventLoop* getLoop() const { return loop_; }
@@ -39,12 +53,10 @@ public:
   bool disconnected() const { return state_ == kDisconnected; }
   // return true if success.
   bool getTcpInfo(struct tcp_info*) const;
-  string getTcpInfoString() const;
+  std::string getTcpInfoString() const;
 
-  // void send(string&& message); // C++11
-  void send(const void* message, int len);
-  void send(const StringPiece& message);
-  // void send(Buffer&& message); // C++11
+  void send(string&& message); // C++11
+
   void send(Buffer* message);  // this one will swap data
   void shutdown(); // NOT thread safe, no simultaneous calling
   // void shutdownAndForceCloseAfter(double seconds); // NOT thread safe, no simultaneous calling
@@ -95,7 +107,8 @@ public:
 
  private:
   enum StateE { kDisconnected, kConnecting, kConnected, kDisconnecting };
-  void handleRead(Timestamp receiveTime);
+  
+  void handleRead(TimeStamp receiveTime);
   void handleWrite();
   void handleClose();
   void handleError();
@@ -111,7 +124,7 @@ public:
   void stopReadInLoop();
 
   EventLoop* loop_;
-  const string name_;
+  const std::string name_;
   StateE state_;  // FIXME: use atomic variable
   bool reading_;
   // we don't expose those classes to client.
