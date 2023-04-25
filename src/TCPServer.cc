@@ -2,6 +2,7 @@
 #include "Logger.h"
 #include<cassert>
 #include<string>
+#include<cstring>
 
 /***
  *  @brief ÅÐ¶ÏloopÊÇ·ñÎª¿Õ
@@ -68,14 +69,14 @@ void TcpServer::newConnection(int sockfd, const InetAddress& peerAddr){
     // LOG_INFO << "TcpServer::newConnection [" << name_
     //     << "] - new connection [" << connName
     //     << "] from " << peerAddr.toIpPort();
-    InetAddress localAddr(::getLocalAddr(sockfd));
-    // FIXME poll with zero timeout to double confirm the new connection
-    // FIXME use make_shared if necessary
-    TcpConnectionPtr conn(new TcpConnection(ioLoop,
-        connName,
-        sockfd,
-        localAddr,
-        peerAddr));
+    sockaddr_in localSockaddr;
+    memset(&localSockaddr, 0, sizeof(localSockaddr));
+    socklen_t addrlen = sizeof(localSockaddr);
+    getsockname(sockfd, (sockaddr*)&localSockaddr, &addrlen);
+
+    InetAddress localAddr(localSockaddr);
+
+    TcpConnectionPtr conn(new TcpConnection(ioLoop, connName, sockfd, localAddr, peerAddr));
     connections_[connName] = conn;
     conn->setConnectionCallback(connectionCallback_);
     conn->setMessageCallback(messageCallback_);

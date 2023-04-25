@@ -9,10 +9,10 @@ class EventLoop;
 class InetAddress;
 
 /***
-*	@brief 创建一个acceptor对象，这个acceptor对象只负责接受一个你设置好的socket地址，这个过程中你还需要
-*		   传入一个声明好的EventLoop，将这个acceptor与这个EventLoop绑定，绑定好后该EventLoop为主reactor。
-*	       然后需要调用Acceptor的成员函数listen对相应端口进行监听，类中已定义好发生可读事件(有客户端发起连接请求)的处理函数，即accept
-*	       但我们还需要设置新连接产生后的回调函数，在muduo中，该函数的作用是将新连接分配给新的EventLoop
+*	 创建一个acceptor对象，这个acceptor对象只负责接受一个你设置好的socket地址，这个过程中你还需要
+*	 传入一个声明好的EventLoop，将这个acceptor与这个EventLoop绑定，绑定好后该EventLoop为主reactor。
+*	 然后需要调用Acceptor的成员函数listen对相应端口进行监听，类中已定义好发生可读事件(有客户端发起连接请求)的处理函数，即accept
+*	 但我们还需要设置新连接产生后的回调函数，在muduo中，该函数的作用是将新连接分配给新的EventLoop
 ***/
 class Acceptor : noncopyable{
 public:

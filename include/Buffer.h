@@ -18,12 +18,24 @@
 ///其中，readable bytes为可读数据长度，writable bytes为可写数据长度
 ///即实际上buffer为一个队列，以input buffer为例，客户端传入的数据不断地放到writable中变为readable，writerIndex向后移
 ///服务器代码不断从readable中进行读取，readerIndex向后移
+///对于一个服务器而言，需要两个buffer，其中output buffer是服务器程序往里写数据，再将buffer中的数据拷贝到socket中send出去
+///input buffer是遇到可读事件时，将socket中的数据拷贝到input buffer中，再由处理程序读取buffer中的内容
 
+
+/***
+ *  @brief Buffer是一个缓冲区，用于保证Non-blocking IO中的非阻塞问题。
+ *         一个buffer有四个区，第一部分为prependable，有readable区数据被读取后释放
+ *         第二部分为readable，即已被写入，待读取
+ *         第三部分为writable，即为空，可被写入
+ *         Buffer类会自动调整空闲区，并在容量不足时自动扩容。
+ *         主要成员函数有2：
+ *         writeFd(); 将数据从buffer写入socketfd中
+ *         readFd(); 将数据从socketfd读到buffer中
+***/
 class Buffer{
 public:
     static const size_t kCheapPrepend = 8;   //用于记录数据包的长度，解决粘包问题
     static const size_t kInitialSize = 1024; //默认缓冲区长度
-
 
     /***
      *  @brief 构造函数，创建一个buffer

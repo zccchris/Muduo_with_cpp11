@@ -9,6 +9,7 @@
 #include "EventLoop.h"
 #include "EventLoopThreadPool.h"
 #include "Callbacks.h"
+#include "TcpConnection.h"
 #include <string>
 #include <atomic>
 #include <memory>

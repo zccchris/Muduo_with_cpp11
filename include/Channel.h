@@ -37,15 +37,12 @@ public:
 	void setCloseCallback(EventCallback cb) { closeCallback_ = std::move(cb); }
 	void setErrorCallback(EventCallback cb) { errorCallback_ = std::move(cb); }
 
-
-
 	void tie(const std::shared_ptr<void>&);//防止当channel被手动remove掉，channel还正在执行回调操作
 	int fd() const { return fd_; }
 	int events() const { return events_; }
 
 	//通过这个设置得知当前channel的fd发生了什么需要处理的事件类型
 	int set_revents(int revt) { revents_ = revt; }
-
 
 	//设置fd相应的事件状态，比如需要监听这个fd的可读事件/可写事件，或者取消监听。
 	void enableReading() { events_ |= kReadEvent; update(); }

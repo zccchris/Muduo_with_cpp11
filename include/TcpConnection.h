@@ -6,11 +6,12 @@
 #include "InetAddress.h"
 #include "Callbacks.h"
 #include "TimeStamp.h"
-//#include "Buffer.h"
+#include "Buffer.h"
 class Channel;
 class EventLoop;
 class Socket;
-// struct tcp_info is in <netinet/tcp.h>
+class Buffer;
+
 struct tcp_info;
 
 class Channel;
@@ -45,56 +46,79 @@ public:
     ***/  
     ~TcpConnection();
 
-  EventLoop* getLoop() const { return loop_; }
-  const std::string& name() const { return name_; }
-  const InetAddress& localAddress() const { return localAddr_; }
-  const InetAddress& peerAddress() const { return peerAddr_; }
-  bool connected() const { return state_ == kConnected; }
-  bool disconnected() const { return state_ == kDisconnected; }
-  // return true if success.
-  bool getTcpInfo(struct tcp_info*) const;
-  std::string getTcpInfoString() const;
+    /***
+     * @brief 获得该TcpConnection所属的EventLoop
+     * @return 所属EventLoop
+    ***/ 
+    EventLoop* getLoop() const { return loop_; }
 
-  void send(string&& message); // C++11
+    /***
+     * @brief 获得该TcpConnection的名字
+     * @return name
+    ***/ 
+    const std::string& name() const { return name_; }  
 
-  void send(Buffer* message);  // this one will swap data
-  void shutdown(); // NOT thread safe, no simultaneous calling
-  // void shutdownAndForceCloseAfter(double seconds); // NOT thread safe, no simultaneous calling
-  void forceClose();
-  void forceCloseWithDelay(double seconds);
-  void setTcpNoDelay(bool on);
-  // reading or not
-  void startRead();
-  void stopRead();
-  bool isReading() const { return reading_; }; // NOT thread safe, may race with start/stopReadInLoop
+    /***
+     * @brief 获得该TcpConnection中服务器端的地址
+     * @return address
+    ***/ 
+    const InetAddress& localAddress() const { return localAddr_; }
 
-  void setContext(const boost::any& context)
-  { context_ = context; }
+    /***
+     * @brief 获得该TcpConnection中客户端的地址
+     * @return address
+    ***/ 
+    const InetAddress& peerAddress() const { return peerAddr_; }
 
-  const boost::any& getContext() const
-  { return context_; }
+    /***
+     * @brief 该TcpConnection的状态是否为已连接
+     * @return bool
+    ***/ 
+    bool connected() const { return state_ == kConnected; }
+    
+    /***
+     * @brief 该TcpConnection的状态是否为断开
+     * @return bool
+    ***/ 
+    bool disconnected() const { return state_ == kDisconnected; }
 
-  boost::any* getMutableContext()
-  { return &context_; }
 
-  void setConnectionCallback(const ConnectionCallback& cb)
-  { connectionCallback_ = cb; }
+    
+    // return true if success.
+    bool getTcpInfo(struct tcp_info*) const;
+    std::string getTcpInfoString() const;
 
-  void setMessageCallback(const MessageCallback& cb)
-  { messageCallback_ = cb; }
+    void send(std::string&& message); // C++11
 
-  void setWriteCompleteCallback(const WriteCompleteCallback& cb)
-  { writeCompleteCallback_ = cb; }
+    void send(Buffer* message);  // this one will swap data
+    void shutdown(); // NOT thread safe, no simultaneous calling
+    // void shutdownAndForceCloseAfter(double seconds); // NOT thread safe, no simultaneous calling
+    void forceClose();
+    void forceCloseWithDelay(double seconds);
+    void setTcpNoDelay(bool on);
+    // reading or not
+    void startRead();
+    void stopRead();
+    bool isReading() const { return reading_; }; // NOT thread safe, may race with start/stopReadInLoop
 
-  void setHighWaterMarkCallback(const HighWaterMarkCallback& cb, size_t highWaterMark)
-  { highWaterMarkCallback_ = cb; highWaterMark_ = highWaterMark; }
+    void setConnectionCallback(const ConnectionCallback& cb)
+    { connectionCallback_ = cb; }
 
-  /// Advanced interface
-  Buffer* inputBuffer()
-  { return &inputBuffer_; }
+    void setMessageCallback(const MessageCallback& cb)
+    { messageCallback_ = cb; }
 
-  Buffer* outputBuffer()
-  { return &outputBuffer_; }
+    void setWriteCompleteCallback(const WriteCompleteCallback& cb)
+    { writeCompleteCallback_ = cb; }
+
+    void setHighWaterMarkCallback(const HighWaterMarkCallback& cb, size_t highWaterMark)
+    { highWaterMarkCallback_ = cb; highWaterMark_ = highWaterMark; }
+
+    /// Advanced interface
+    Buffer* inputBuffer()
+    { return &inputBuffer_; }
+
+    Buffer* outputBuffer()
+    { return &outputBuffer_; }
 
   /// Internal use only.
   void setCloseCallback(const CloseCallback& cb)
@@ -112,8 +136,8 @@ public:
   void handleWrite();
   void handleClose();
   void handleError();
-  // void sendInLoop(string&& message);
-  void sendInLoop(const StringPiece& message);
+  void sendInLoop(std::string&& message);
+
   void sendInLoop(const void* message, size_t len);
   void shutdownInLoop();
   // void shutdownAndForceCloseInLoop(double seconds);
@@ -140,9 +164,7 @@ public:
   size_t highWaterMark_;
   Buffer inputBuffer_;
   Buffer outputBuffer_; // FIXME: use list<Buffer> as output buffer.
-  boost::any context_;
-  // FIXME: creationTime_, lastReceiveTime_
-  //        bytesReceived_, bytesSent_
+
 };
 
 typedef std::shared_ptr<TcpConnection> TcpConnectionPtr;
